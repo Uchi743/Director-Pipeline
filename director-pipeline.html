@@ -501,11 +501,19 @@ function handleFiles(files){
     if(!file.type.startsWith('image/'))return;
     const reader=new FileReader();
     reader.onload=ev=>{
-      const dataUrl=ev.target.result;
-      const base64=dataUrl.split(',')[1];
-      const mediaType=file.type;
-      uploadedImages.push({dataUrl,base64,mediaType,name:file.name});
-      renderPreviews();
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        canvas.width=img.width;
+        canvas.height=img.height;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0);
+        const dataUrl=canvas.toDataURL('image/jpeg',0.92);
+        const base64=dataUrl.split(',')[1];
+        uploadedImages.push({dataUrl,base64,mediaType:'image/jpeg',name:file.name});
+        renderPreviews();
+      };
+      img.src=ev.target.result;
     };
     reader.readAsDataURL(file);
   });
