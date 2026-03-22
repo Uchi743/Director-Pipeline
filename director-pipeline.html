@@ -82,7 +82,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 
 /* CHIPS */
-.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;max-height:72px;overflow-y:auto;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
 .chip{
   font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;
   letter-spacing:.06em;text-transform:uppercase;
@@ -227,8 +227,37 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .err{padding:14px;border-radius:var(--r);font-size:12px;background:rgba(255,69,58,0.08);border:0.5px solid rgba(255,69,58,0.2);color:#ff453a;line-height:1.6}
 #result{display:none;flex-direction:column;gap:14px}
 
-.proj-banner{display:flex;height:72px;overflow:hidden;border-bottom:0.5px solid rgba(255,255,255,0.07);flex-shrink:0;width:100%}
-.proj-banner img{height:72px;display:block;flex:1;object-fit:cover;min-width:0}
+.proj-banner{display:flex;height:110px;overflow:hidden;border-bottom:0.5px solid rgba(255,255,255,0.07);flex-shrink:0;width:100%}
+.proj-banner img{height:110px;display:block;flex:1;object-fit:cover;min-width:0}
+
+.hist-list{display:flex;flex-direction:column;gap:10px}
+.hist-item{
+  background:rgba(10,10,10,0.85);border:0.5px solid rgba(255,255,255,0.07);
+  border-radius:12px;padding:14px 16px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  transition:border-color .2s;cursor:pointer;
+}
+.hist-item:hover{border-color:rgba(255,255,255,0.14)}
+.hist-info{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.hist-title{font-size:13px;font-weight:600;color:#f5f5f7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-meta{font-size:10px;color:#48484a;font-weight:500;letter-spacing:.04em}
+.hist-style{font-size:10px;color:#636366;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-load{
+  flex-shrink:0;font-size:10px;font-weight:700;padding:5px 12px;border-radius:20px;
+  background:transparent;border:0.5px solid rgba(255,255,255,0.12);color:#a1a1a6;
+  cursor:pointer;transition:all .15s;font-family:'Montserrat',sans-serif;letter-spacing:.06em;text-transform:uppercase;
+}
+.hist-load:hover{color:#f5f5f7;border-color:rgba(255,255,255,0.25)}
+.hist-del{
+  flex-shrink:0;width:26px;height:26px;border-radius:50%;
+  background:transparent;border:0.5px solid rgba(255,255,255,0.07);color:#48484a;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:12px;transition:all .15s;
+}
+.hist-del:hover{color:#ff453a;border-color:rgba(255,69,58,0.3)}
+.hist-empty{text-align:center;padding:60px 20px;color:#48484a;font-size:13px}
+
+@keyframes bounce-y{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
 </style>
 </head>
 <body>
@@ -247,6 +276,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
     <button class="ph" onclick="switchPhase(this,'storyboard')">Storyboard</button>
     <button class="ph" onclick="switchPhase(this,'prompts')">Prompts</button>
     <button class="ph" onclick="switchPhase(this,'montage')">Montage</button>
+    <button class="ph" onclick="switchPhase(this,'historique')">Historique</button>
   </div>
   <div class="api-wrap">
     <svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
@@ -288,7 +318,15 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
           <div class="mic-h" id="hint-concept">Écoute...</div>
         </div>
         <div style="margin-top:12px">
-          <label style="font-size:10px;font-weight:700;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:7px">Émotions</label>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+            <label style="font-size:10px;font-weight:700;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase">Émotions</label>
+            <div style="display:flex;align-items:center;gap:4px;color:var(--txt3);font-size:9px;font-weight:500;letter-spacing:.04em">
+              <span>Défiler</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:bounce-y 1.2s ease-in-out infinite">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+          </div>
           <div class="chips" id="emotion-chips">
             <div class="chip" onclick="this.classList.toggle('on')">Épique</div>
             <div class="chip" onclick="this.classList.toggle('on')">Mystérieux</div>
@@ -409,7 +447,11 @@ let currentPhase='all',data=null,activeRec=null,uploadedImages=[];
 function switchPhase(el,phase){
   document.querySelectorAll('.ph').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');currentPhase=phase;
-  if(data)render(data,phase);
+  if(phase==='historique'){
+    document.getElementById('empty').style.display='none';
+    document.getElementById('loading').classList.remove('on');
+    renderHistory();
+  } else if(data) render(data,phase);
 }
 
 function getEmotions(){
@@ -517,6 +559,7 @@ Réponds UNIQUEMENT en JSON valide, rien d'autre.
     if(d.error)throw new Error(d.error.message);
     const parsed=JSON.parse((d.content?.[0]?.text||'').replace(/```json|```/g,'').trim());
     data=parsed;
+    saveToHistory(parsed);
     document.getElementById('loading').classList.remove('on');
     document.getElementById('btn-gen').disabled=false;
     document.getElementById('result').style.display='flex';
@@ -607,6 +650,74 @@ function cp(btn,txt){
     btn.classList.add('done');btn.textContent='Copié ✓';
     setTimeout(()=>{btn.classList.remove('done');btn.textContent='Copier';},2000);
   });
+}
+
+function saveToHistory(d) {
+  const title = document.getElementById('f-title').value.trim() || 'Sans titre';
+  const style = document.getElementById('f-style').value;
+  const entry = {
+    id: Date.now(),
+    title,
+    style,
+    date: new Date().toLocaleDateString('fr-FR', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    data: d
+  };
+  const hist = JSON.parse(localStorage.getItem('cr_history') || '[]');
+  hist.unshift(entry);
+  if (hist.length > 20) hist.pop();
+  localStorage.setItem('cr_history', JSON.stringify(hist));
+}
+
+function renderHistory() {
+  const el = document.getElementById('result');
+  el.innerHTML = '';
+  const hist = JSON.parse(localStorage.getItem('cr_history') || '[]');
+  if (hist.length === 0) {
+    el.innerHTML = '<div class="hist-empty">Aucune génération sauvegardée.<br>Lance ton premier pipeline !</div>';
+    return;
+  }
+  const list = document.createElement('div');
+  list.className = 'hist-list';
+  hist.forEach((entry, i) => {
+    const item = document.createElement('div');
+    item.className = 'hist-item';
+    item.innerHTML = `
+      <div class="hist-info">
+        <div class="hist-title">${entry.title}</div>
+        <div class="hist-meta">${entry.date}</div>
+        <div class="hist-style">${entry.style}</div>
+      </div>
+      <button class="hist-load" onclick="loadHistory(${i})">Charger</button>
+      <button class="hist-del" onclick="deleteHistory(${i}, event)">✕</button>
+    `;
+    list.appendChild(item);
+  });
+  el.appendChild(list);
+  el.style.display = 'flex';
+}
+
+function loadHistory(i) {
+  const hist = JSON.parse(localStorage.getItem('cr_history') || '[]');
+  const entry = hist[i];
+  if (!entry) return;
+  data = entry.data;
+  document.getElementById('f-title').value = entry.title;
+  document.getElementById('f-style').value = entry.style;
+  document.getElementById('empty').style.display = 'none';
+  document.getElementById('result').style.display = 'flex';
+  // Switch to all phase
+  document.querySelectorAll('.ph').forEach(b => b.classList.remove('on'));
+  document.querySelector('.ph').classList.add('on');
+  currentPhase = 'all';
+  render(entry.data, 'all');
+}
+
+function deleteHistory(i, e) {
+  e.stopPropagation();
+  const hist = JSON.parse(localStorage.getItem('cr_history') || '[]');
+  hist.splice(i, 1);
+  localStorage.setItem('cr_history', JSON.stringify(hist));
+  renderHistory();
 }
 </script>
 </body>
